@@ -11,7 +11,7 @@ function initiatePayment() {
     const amount = services.reduce((total, service) => total + (prices[service] || 0), 0);
 
     const handler = PaystackPop.setup({
-        key: 'pk_test_xxxxxxxxxxxxxxxxxxxxxxxx', // Replace with your public key
+        key: 'pk_test_679d248963c511251b9599f9238843975cb611d0', // Replace with your public key
         email: 'user@example.com', // Should get from user data
         amount: amount,
         currency: 'NGN',
