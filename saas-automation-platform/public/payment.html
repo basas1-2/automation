@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - SaaS Automation Platform</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Payment</h1>
+    </header>
+    <main>
+        <div id="paymentDetails">
+            <h2>Selected Services</h2>
+            <ul id="selectedServices"></ul>
+            <p>Total: ₦<span id="totalAmount"></span></p>
+            <button id="payBtn">Pay Now</button>
+        </div>
+    </main>
+    <script src="js/paystack.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

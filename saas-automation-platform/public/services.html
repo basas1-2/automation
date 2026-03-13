@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Services - SaaS Automation Platform</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Select Automation Services</h1>
+        <nav>
+            <a href="dashboard.html">Dashboard</a>
+        </nav>
+    </header>
+    <main>
+        <section>
+            <p style="text-align: center; background: #e8f4fd; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">🎁 New users get a 7-day free trial! Select services and start automating immediately.</p>
+        </section>
+        <form id="servicesForm">
+            <label><input type="checkbox" name="services" value="whatsapp"> WhatsApp Automation - ₦100/month</label><br>
+            <label><input type="checkbox" name="services" value="website-chatbot"> Website Chatbot - ₦150/month</label><br>
+            <label><input type="checkbox" name="services" value="instagram"> Instagram Messaging - ₦120/month</label><br>
+            <label><input type="checkbox" name="services" value="tiktok"> TikTok Automation - ₦130/month</label><br>
+            <p>Total: ₦<span id="total">0</span></p>
+            <button type="submit">Proceed to Payment</button>
+        </form>
+    </main>
+    <script src="js/app.js"></script>
+</body>
+</html>
