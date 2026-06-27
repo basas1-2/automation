@@ -12,6 +12,7 @@ connectDB();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'));
 
 // Routes
@@ -19,8 +20,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/whatsapp', require('./routes/whatsapp'));
-
-// const app = require('./app');
+app.use('/webhook', require('./routes/webhook'));
 
 const PORT = process.env.PORT || 5000;
 
