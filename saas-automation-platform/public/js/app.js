@@ -69,9 +69,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         logoutBtn.addEventListener('click', handleLogout);
     }
 
-    const whatsappForm = document.getElementById('whatsappForm');
-    if (whatsappForm) {
-        whatsappForm.addEventListener('submit', handleWhatsAppSubmit);
+    const whatsappConnectForm = document.getElementById('whatsappConnectForm');
+    if (whatsappConnectForm) {
+        whatsappConnectForm.addEventListener('submit', handleWhatsAppConnect);
+    }
+
+    const ruleForm = document.getElementById('ruleForm');
+    if (ruleForm) {
+        ruleForm.addEventListener('submit', handleRuleSubmit);
     }
 
     // Load dashboard if on dashboard page
@@ -187,6 +192,7 @@ async function loadDashboard() {
         if (userResponse.ok) {
             displayDashboard(user, purchases);
             loadWhatsAppStatus();
+            loadAutomationSummary();
         } else {
             clearAuthState();
             window.location.href = 'login.html';
@@ -236,42 +242,65 @@ function displayDashboard(user, purchases) {
     servicesList.innerHTML = html;
 }
 
-async function handleWhatsAppSubmit(e) {
+async function handleWhatsAppConnect(e) {
     e.preventDefault();
 
-    const to = document.getElementById('whatsappNumber').value.trim();
-    const message = document.getElementById('whatsappMessage').value.trim();
-    const resultBox = document.getElementById('whatsappResult');
+    const phoneNumberId = document.getElementById('phoneNumberId').value.trim();
+    const accessToken = document.getElementById('accessToken').value.trim();
+    const whatsappNumber = document.getElementById('whatsappNumber').value.trim();
+    const webhookVerifyToken = document.getElementById('webhookVerifyToken').value.trim();
     const statusBox = document.getElementById('whatsappStatus');
 
-    if (!to || !message) {
-        resultBox.textContent = 'Please enter both a number and a message.';
-        return;
-    }
-
     try {
-        const response = await fetch(`${API_BASE}/whatsapp/send`, {
+        const response = await fetch(`${API_BASE}/whatsapp/connect`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
             },
-            body: JSON.stringify({ to, message }),
+            body: JSON.stringify({ phoneNumberId, accessToken, whatsappNumber, webhookVerifyToken }),
         });
 
         const data = await response.json();
         if (response.ok && data.success) {
-            resultBox.textContent = data.message;
-            statusBox.textContent = 'WhatsApp integration is ready.';
+            statusBox.textContent = 'WhatsApp connection saved successfully.';
+            await loadAutomationSummary();
         } else {
-            resultBox.textContent = data.message || 'Unable to send WhatsApp message.';
-            if (statusBox) {
-                statusBox.textContent = 'WhatsApp integration needs configuration.';
-            }
+            statusBox.textContent = data.message || 'Unable to save WhatsApp connection.';
         }
     } catch (error) {
-        console.error('WhatsApp send error:', error);
-        resultBox.textContent = 'Unable to send WhatsApp message right now.';
+        console.error('WhatsApp connect error:', error);
+        statusBox.textContent = 'Unable to save WhatsApp connection right now.';
+    }
+}
+
+async function handleRuleSubmit(e) {
+    e.preventDefault();
+
+    const trigger = document.getElementById('ruleTrigger').value.trim();
+    const response = document.getElementById('ruleResponse').value.trim();
+
+    try {
+        const responsePayload = await fetch(`${API_BASE}/whatsapp/rules`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify({ trigger, response }),
+        });
+
+        const data = await responsePayload.json();
+        if (responsePayload.ok && data.success) {
+            document.getElementById('ruleTrigger').value = '';
+            document.getElementById('ruleResponse').value = '';
+            await loadAutomationSummary();
+        } else {
+            alert(data.message || 'Unable to create rule.');
+        }
+    } catch (error) {
+        console.error('Rule create error:', error);
+        alert('Unable to create rule right now.');
     }
 }
 
@@ -287,7 +316,6 @@ function getServiceDetails(service) {
 
 async function loadWhatsAppStatus() {
     const statusBox = document.getElementById('whatsappStatus');
-    const resultBox = document.getElementById('whatsappResult');
 
     if (!statusBox) {
         return;
@@ -300,16 +328,100 @@ async function loadWhatsAppStatus() {
         const data = await response.json();
 
         if (response.ok && data.configured) {
-            statusBox.textContent = 'WhatsApp integration is configured and ready.';
+            statusBox.textContent = 'Meta WhatsApp integration is configured and ready.';
         } else {
             statusBox.textContent = data.message || 'WhatsApp integration needs configuration.';
-            if (resultBox) {
-                resultBox.textContent = 'Add Twilio credentials to enable live message sending.';
-            }
         }
     } catch (error) {
         console.error('WhatsApp status error:', error);
         statusBox.textContent = 'Could not check WhatsApp integration status.';
+    }
+}
+
+async function loadAutomationSummary() {
+    const summaryBox = document.getElementById('automationSummary');
+    const rulesBox = document.getElementById('rulesList');
+    const logsBox = document.getElementById('messageLogs');
+
+    try {
+        const response = await fetch(`${API_BASE}/whatsapp/summary`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Unable to load automation summary.');
+        }
+
+        const connectionStatus = data.connected ? 'Connected to Meta WhatsApp' : 'Not connected yet';
+        const accessStatus = data.canUseAutomation ? 'Automation access active' : 'Purchase or trial required';
+        summaryBox.innerHTML = `
+            <p><strong>Status:</strong> ${connectionStatus}</p>
+            <p><strong>Access:</strong> ${accessStatus}</p>
+            <p><strong>Rules:</strong> ${data.activeRules}/${data.totalRules} active</p>
+        `;
+
+        rulesBox.innerHTML = (data.rules || []).map(rule => `
+            <div class="service">
+                <p><strong>Trigger:</strong> ${rule.trigger}</p>
+                <p><strong>Response:</strong> ${rule.response}</p>
+                <p><strong>Active:</strong> ${rule.active === false ? 'No' : 'Yes'}</p>
+                <button type="button" data-rule-id="${rule._id}" class="toggle-rule">${rule.active === false ? 'Enable' : 'Disable'}</button>
+                <button type="button" data-rule-id="${rule._id}" class="delete-rule">Delete</button>
+            </div>
+        `).join('');
+
+        logsBox.innerHTML = '<h3>Recent Activity</h3>' + (data.messages || []).map(message => `
+            <div class="service">
+                <p><strong>${message.direction}</strong> - ${message.content}</p>
+                <small>${new Date(message.createdAt).toLocaleString()}</small>
+            </div>
+        `).join('');
+
+        document.querySelectorAll('.toggle-rule').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const ruleId = btn.getAttribute('data-rule-id');
+                await toggleRule(ruleId);
+            });
+        });
+
+        document.querySelectorAll('.delete-rule').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const ruleId = btn.getAttribute('data-rule-id');
+                await deleteRule(ruleId);
+            });
+        });
+    } catch (error) {
+        console.error('Automation summary error:', error);
+        summaryBox.innerHTML = '<p>Unable to load automation details.</p>';
+    }
+}
+
+async function toggleRule(ruleId) {
+    try {
+        const response = await fetch(`${API_BASE}/whatsapp/rules/${ruleId}/toggle`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        });
+        if (response.ok) {
+            await loadAutomationSummary();
+        }
+    } catch (error) {
+        console.error('Rule toggle error:', error);
+    }
+}
+
+async function deleteRule(ruleId) {
+    try {
+        const response = await fetch(`${API_BASE}/whatsapp/rules/${ruleId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        });
+        if (response.ok) {
+            await loadAutomationSummary();
+        }
+    } catch (error) {
+        console.error('Rule delete error:', error);
     }
 }
 

@@ -25,14 +25,32 @@
         <section id="whatsappIntegration" class="service">
             <h2>WhatsApp Automation</h2>
             <p id="whatsappStatus">Checking WhatsApp integration status...</p>
-            <form id="whatsappForm">
-                <label for="whatsappNumber">Recipient number:</label>
-                <input type="text" id="whatsappNumber" placeholder="2348123456789" required>
-                <label for="whatsappMessage">Message:</label>
-                <textarea id="whatsappMessage" rows="3" placeholder="Hello from your automation platform" required></textarea>
-                <button type="submit">Send Test Message</button>
+            <div id="automationSummary"></div>
+
+            <form id="whatsappConnectForm">
+                <h3>Connect Meta WhatsApp</h3>
+                <label for="phoneNumberId">Phone Number ID</label>
+                <input type="text" id="phoneNumberId" placeholder="Your Meta Phone Number ID" required>
+                <label for="accessToken">Access Token</label>
+                <input type="text" id="accessToken" placeholder="Your Meta Access Token" required>
+                <label for="whatsappNumber">Business Number</label>
+                <input type="text" id="whatsappNumber" placeholder="+2348123456789">
+                <label for="webhookVerifyToken">Webhook Verify Token</label>
+                <input type="text" id="webhookVerifyToken" placeholder="Optional verify token">
+                <button type="submit">Save WhatsApp Connection</button>
             </form>
-            <p id="whatsappResult"></p>
+
+            <form id="ruleForm">
+                <h3>Create Automation Rule</h3>
+                <label for="ruleTrigger">Trigger Keyword</label>
+                <input type="text" id="ruleTrigger" placeholder="hi" required>
+                <label for="ruleResponse">Response Message</label>
+                <textarea id="ruleResponse" rows="3" placeholder="Hello welcome" required></textarea>
+                <button type="submit">Save Rule</button>
+            </form>
+
+            <div id="rulesList"></div>
+            <div id="messageLogs"></div>
         </section>
     </main>
     <script src="js/app.js"></script>

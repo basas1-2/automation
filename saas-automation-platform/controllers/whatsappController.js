@@ -1,102 +1,14 @@
-const axios = require('axios');
 const User = require('../models/User');
 const WhatsAppRule = require('../models/WhatsAppRule');
 const WhatsAppConnection = require('../models/WhatsAppConnection');
+const Purchase = require('../models/Purchase');
+const WhatsAppMessage = require('../models/WhatsAppMessage');
+const whatsappService = require('../services/whatsappService');
 
-const normalizeText = (value = '') => value.toLowerCase().trim();
-
-const greetingSynonyms = {
-  hi: ['hello', 'hey', 'heya', 'hola', 'yo'],
-  hello: ['hi', 'hey', 'heya', 'hola', 'yo'],
-};
-
-const isFuzzyMatch = (message, trigger) => {
-  const normalizedMessage = normalizeText(message);
-  const normalizedTrigger = normalizeText(trigger);
-
-  if (!normalizedMessage || !normalizedTrigger) {
-    return false;
-  }
-
-  if (normalizedMessage.includes(normalizedTrigger)) {
-    return true;
-  }
-
-  const aliases = new Set([normalizedTrigger, ...(greetingSynonyms[normalizedTrigger] || [])]);
-  for (const alias of aliases) {
-    if (normalizedMessage.includes(alias)) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
-exports.getReplyForIncomingMessage = async (user, incomingText, rules = []) => {
-  const normalizedMessage = normalizeText(incomingText);
-  const activeRules = (rules || []).filter((rule) => rule.active !== false);
-
-  for (const rule of activeRules) {
-    const normalizedTrigger = normalizeText(rule.trigger);
-    if (!normalizedTrigger) continue;
-
-    if (isFuzzyMatch(normalizedMessage, normalizedTrigger)) {
-      return rule.response;
-    }
-  }
-
-  return 'Thanks for your message! I will reply soon.';
-};
-
-exports.findConnectionForMessage = (payload = {}, connections = []) => {
-  const metadata = payload?.entry?.[0]?.changes?.[0]?.value?.metadata || payload?.metadata || {};
-  const phoneNumberId = metadata.phone_number_id || metadata.phoneNumberId;
-  const displayPhoneNumber = metadata.display_phone_number || metadata.displayPhoneNumber;
-
-  if (phoneNumberId) {
-    const byPhoneNumberId = connections.find((connection) => connection.phoneNumberId === phoneNumberId);
-    if (byPhoneNumberId) return byPhoneNumberId;
-  }
-
-  if (displayPhoneNumber) {
-    const byDisplayNumber = connections.find((connection) => connection.whatsappNumber === displayPhoneNumber);
-    if (byDisplayNumber) return byDisplayNumber;
-  }
-
-  const fallback = connections.find((connection) => connection.whatsappNumber);
-  return fallback || null;
-};
-
-const getMetaConfig = (connection = null) => {
-  const phoneNumberId = connection?.phoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID || process.env.META_WHATSAPP_PHONE_NUMBER_ID;
-  const accessToken = connection?.accessToken || process.env.WHATSAPP_ACCESS_TOKEN || process.env.META_WHATSAPP_ACCESS_TOKEN;
-
-  return { phoneNumberId, accessToken };
-};
-
-exports.sendMetaWhatsAppMessage = async (to, body, connection = null) => {
-  const { phoneNumberId, accessToken } = getMetaConfig(connection);
-
-  if (!phoneNumberId || !accessToken) {
-    throw new Error('Meta WhatsApp credentials are not configured.');
-  }
-
-  return axios.post(
-    `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
-    {
-      messaging_product: 'whatsapp',
-      to,
-      type: 'text',
-      text: { body },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-};
+exports.getReplyForIncomingMessage = whatsappService.getReplyForIncomingMessage;
+exports.findConnectionForMessage = whatsappService.findConnectionForMessage;
+exports.canUseAutomation = whatsappService.canUseAutomation;
+exports.sendMetaWhatsAppMessage = whatsappService.sendMetaWhatsAppMessage;
 
 exports.getWhatsAppStatus = (req, res) => {
   const configured = Boolean(
@@ -232,6 +144,65 @@ exports.deleteRule = async (req, res) => {
   }
 };
 
+exports.toggleRule = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?.user?.id;
+    const { id } = req.params;
+    const rule = await WhatsAppRule.findOne({ _id: id, userId });
+
+    if (!rule) {
+      return res.status(404).json({ success: false, message: 'Rule not found.' });
+    }
+
+    rule.active = !rule.active;
+    await rule.save();
+
+    res.json({ success: true, rule });
+  } catch (error) {
+    console.error('Rule toggle error:', error.message);
+    res.status(500).json({ success: false, message: 'Unable to update rule.' });
+  }
+};
+
+exports.getAutomationSummary = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?.user?.id;
+    const [connection, rules, purchases, messages] = await Promise.all([
+      WhatsAppConnection.findOne({ userId }).lean(),
+      WhatsAppRule.find({ userId }).sort({ createdAt: -1 }).lean(),
+      Purchase.find({ userId }).lean(),
+      WhatsAppMessage.find({ userId }).sort({ createdAt: -1 }).limit(20).lean(),
+    ]);
+
+    const user = await User.findById(userId).lean();
+    res.json({
+      success: true,
+      connected: Boolean(connection),
+      activeRules: rules.filter((rule) => rule.active !== false).length,
+      totalRules: rules.length,
+      canUseAutomation: exports.canUseAutomation(user, purchases),
+      connection,
+      rules,
+      purchases,
+      messages,
+    });
+  } catch (error) {
+    console.error('Automation summary error:', error.message);
+    res.status(500).json({ success: false, message: 'Unable to load automation summary.' });
+  }
+};
+
+exports.getMessageLogs = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?.user?.id;
+    const messages = await WhatsAppMessage.find({ userId }).sort({ createdAt: -1 }).limit(50).lean();
+    res.json({ success: true, messages });
+  } catch (error) {
+    console.error('Message log error:', error.message);
+    res.status(500).json({ success: false, message: 'Unable to load message history.' });
+  }
+};
+
 exports.handleWebhookVerify = (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
@@ -276,10 +247,30 @@ exports.receiveWebhook = async (req, res) => {
         continue;
       }
 
+      const purchases = await Purchase.find({ userId: connection.userId });
+      if (!exports.canUseAutomation(user, purchases)) {
+        continue;
+      }
+
+      await WhatsAppMessage.create({
+        userId: connection.userId,
+        senderNumber: senderId,
+        direction: 'inbound',
+        content: incomingText,
+        status: 'received',
+      });
+
       const rules = await WhatsAppRule.find({ userId: connection.userId, active: true });
       const replyText = await exports.getReplyForIncomingMessage(user, incomingText, rules);
 
       await exports.sendMetaWhatsAppMessage(senderId, replyText, connection);
+      await WhatsAppMessage.create({
+        userId: connection.userId,
+        senderNumber: senderId,
+        direction: 'outbound',
+        content: replyText,
+        status: 'sent',
+      });
     }
 
     return res.sendStatus(200);

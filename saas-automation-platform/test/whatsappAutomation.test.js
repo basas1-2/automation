@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { getReplyForIncomingMessage, findConnectionForMessage } = require('../controllers/whatsappController');
+const { getReplyForIncomingMessage, findConnectionForMessage, canUseAutomation } = require('../controllers/whatsappController');
 
 test('returns the matching rule response for a user', async () => {
   const user = { _id: 'user-1' };
@@ -38,4 +38,14 @@ test('resolves the business connection from Meta webhook metadata', () => {
 
   const connection = findConnectionForMessage(payload, connections);
   assert.equal(connection?._id, 'conn-2');
+});
+
+test('allows automation while the WhatsApp trial or purchase is active', () => {
+  const user = { _id: 'user-3', trialExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) };
+  assert.equal(canUseAutomation(user, []), true);
+});
+
+test('blocks automation when no valid purchase or trial exists', () => {
+  const user = { _id: 'user-4', trialExpires: new Date(Date.now() - 24 * 60 * 60 * 1000) };
+  assert.equal(canUseAutomation(user, []), false);
 });
