@@ -137,16 +137,11 @@ async function loadDashboard() {
         const purchases = await purchasesResponse.json();
         // WHERE I CHANGE 
 
-        console.log(userResponse.status);
-console.log(purchasesResponse.status);
-
-if (userResponse.ok && purchasesResponse.ok) {
+        if (userResponse.ok && purchasesResponse.ok) {
     displayDashboard(user, purchases);
 } else {
-    console.log(await userResponse.text());
-    console.log(await purchasesResponse.text());
     alert('Failed to load dashboard');
-}
+        }
     } catch (error) {
         console.error('Load dashboard error:', error);
     }
