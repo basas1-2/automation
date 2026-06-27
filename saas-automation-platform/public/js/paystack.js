@@ -1,16 +1,4 @@
-alert("paystack.js loaded");
 
-document.addEventListener('DOMContentLoaded', () => {
-    alert("DOM loaded");
-
-    const payBtn = document.getElementById('payBtn');
-    alert(payBtn ? "Button found" : "Button not found");
-
-    if (payBtn) {
-        payBtn.addEventListener('click', initiatePayment);
-        alert("Listener attached");
-    }
-});
 document.addEventListener('DOMContentLoaded', () => {
     const payBtn = document.getElementById('payBtn');
     if (payBtn) {
@@ -19,13 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initiatePayment() {
-    const services = JSON.parse(localStorage.getItem('selectedServices') || '[]');
-    const prices = {
-        whatsapp: 10000,
-        'website-chatbot': 15000,
-        instagram: 12000,
-        tiktok: 13000
-    };
+    alert("initiatePayment called");
+}
 
     const amount = services.reduce((total, service) => total + (prices[service] || 0), 0);
 
