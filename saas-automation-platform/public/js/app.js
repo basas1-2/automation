@@ -1,15 +1,48 @@
 const API_BASE = '/api';
 
-document.addEventListener('DOMContentLoaded', () => {
+function clearAuthState() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('selectedServices');
+}
+
+async function validateSession() {
     const token = localStorage.getItem('token');
-    if (token) {
-        // If logged in, redirect to dashboard if on index or login
-        if (window.location.pathname.includes('index.html') || window.location.pathname.includes('login.html')) {
+    if (!token) {
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+            clearAuthState();
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Session validation failed:', error);
+        clearAuthState();
+        return false;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const currentPath = window.location.pathname;
+    const isAuthPage = currentPath.includes('index.html') || currentPath.includes('login.html') || currentPath.includes('register.html') || currentPath === '/';
+    const isProtectedPage = currentPath.includes('dashboard.html') || currentPath.includes('services.html') || currentPath.includes('payment.html');
+
+    const hasValidSession = await validateSession();
+
+    if (hasValidSession) {
+        if (isAuthPage) {
             window.location.href = 'dashboard.html';
         }
     } else {
-        // If not logged in, redirect to login if on protected pages
-        if (window.location.pathname.includes('dashboard.html') || window.location.pathname.includes('services.html') || window.location.pathname.includes('payment.html')) {
+        if (isProtectedPage) {
             window.location.href = 'login.html';
         }
     }
@@ -121,8 +154,7 @@ function handleServicesSubmit(e) {
 }
 
 function handleLogout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('selectedServices');
+    clearAuthState();
     window.location.href = 'index.html';
 }
 
@@ -150,11 +182,13 @@ async function loadDashboard() {
         if (userResponse.ok) {
             displayDashboard(user, purchases);
         } else {
-            alert('Failed to load dashboard');
+            clearAuthState();
+            window.location.href = 'login.html';
         }
     } catch (error) {
         console.error('Load dashboard error:', error);
-        alert('Failed to load dashboard');
+        clearAuthState();
+        window.location.href = 'login.html';
     }
 }
 
