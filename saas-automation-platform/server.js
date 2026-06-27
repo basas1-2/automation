@@ -18,6 +18,7 @@ app.use(express.static('public'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/whatsapp', require('./routes/whatsapp'));
 
 // const app = require('./app');
 

@@ -22,6 +22,18 @@
             <h2>Your Services</h2>
             <div id="servicesList"></div>
         </section>
+        <section id="whatsappIntegration" class="service">
+            <h2>WhatsApp Automation</h2>
+            <p id="whatsappStatus">Checking WhatsApp integration status...</p>
+            <form id="whatsappForm">
+                <label for="whatsappNumber">Recipient number:</label>
+                <input type="text" id="whatsappNumber" placeholder="2348123456789" required>
+                <label for="whatsappMessage">Message:</label>
+                <textarea id="whatsappMessage" rows="3" placeholder="Hello from your automation platform" required></textarea>
+                <button type="submit">Send Test Message</button>
+            </form>
+            <p id="whatsappResult"></p>
+        </section>
     </main>
     <script src="js/app.js"></script>
 </body>

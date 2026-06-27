@@ -69,6 +69,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         logoutBtn.addEventListener('click', handleLogout);
     }
 
+    const whatsappForm = document.getElementById('whatsappForm');
+    if (whatsappForm) {
+        whatsappForm.addEventListener('submit', handleWhatsAppSubmit);
+    }
+
     // Load dashboard if on dashboard page
     if (window.location.pathname.includes('dashboard.html')) {
         loadDashboard();
@@ -181,6 +186,7 @@ async function loadDashboard() {
 
         if (userResponse.ok) {
             displayDashboard(user, purchases);
+            loadWhatsAppStatus();
         } else {
             clearAuthState();
             window.location.href = 'login.html';
@@ -230,6 +236,45 @@ function displayDashboard(user, purchases) {
     servicesList.innerHTML = html;
 }
 
+async function handleWhatsAppSubmit(e) {
+    e.preventDefault();
+
+    const to = document.getElementById('whatsappNumber').value.trim();
+    const message = document.getElementById('whatsappMessage').value.trim();
+    const resultBox = document.getElementById('whatsappResult');
+    const statusBox = document.getElementById('whatsappStatus');
+
+    if (!to || !message) {
+        resultBox.textContent = 'Please enter both a number and a message.';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/whatsapp/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify({ to, message }),
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+            resultBox.textContent = data.message;
+            statusBox.textContent = 'WhatsApp integration is ready.';
+        } else {
+            resultBox.textContent = data.message || 'Unable to send WhatsApp message.';
+            if (statusBox) {
+                statusBox.textContent = 'WhatsApp integration needs configuration.';
+            }
+        }
+    } catch (error) {
+        console.error('WhatsApp send error:', error);
+        resultBox.textContent = 'Unable to send WhatsApp message right now.';
+    }
+}
+
 function getServiceDetails(service) {
     const details = {
         whatsapp: '<p>WhatsApp: Connect your WhatsApp Business API for automated messaging.</p>',
@@ -238,6 +283,34 @@ function getServiceDetails(service) {
         tiktok: '<p>TikTok: Configure message automation setup.</p>',
     };
     return details[service] || '';
+}
+
+async function loadWhatsAppStatus() {
+    const statusBox = document.getElementById('whatsappStatus');
+    const resultBox = document.getElementById('whatsappResult');
+
+    if (!statusBox) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/whatsapp/status`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        });
+        const data = await response.json();
+
+        if (response.ok && data.configured) {
+            statusBox.textContent = 'WhatsApp integration is configured and ready.';
+        } else {
+            statusBox.textContent = data.message || 'WhatsApp integration needs configuration.';
+            if (resultBox) {
+                resultBox.textContent = 'Add Twilio credentials to enable live message sending.';
+            }
+        }
+    } catch (error) {
+        console.error('WhatsApp status error:', error);
+        statusBox.textContent = 'Could not check WhatsApp integration status.';
+    }
 }
 
 function loadPaymentDetails() {
