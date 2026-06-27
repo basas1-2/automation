@@ -19,7 +19,7 @@ function initiatePayment() {
 
     const handler = PaystackPop.setup({
         key: 'pk_live_0cd1f755e46db8a1a2354ea8dd68a76b9aa3987d',
-        email: 'user.email',
+        email: JSON.parse(localStorage.getItem('user')).email
         amount: amount,
         currency: 'NGN',
         callback: function(response) {
