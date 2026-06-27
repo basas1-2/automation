@@ -29,7 +29,7 @@ function initiatePayment() {
 
 async function verifyPayment(reference, services) {
     try {
-        const response = await fetch('const response = await fetch('/api/payments/verify', {', {
+        const response = await fetch('/api/payments/verify', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
