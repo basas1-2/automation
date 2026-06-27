@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+const jwtSecret = process.env.JWT_SECRET || 'dev-secret-key';
+
 exports.register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -28,7 +30,7 @@ exports.register = async (req, res) => {
       },
     };
 
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+    jwt.sign(payload, jwtSecret, { expiresIn: '1h' }, (err, token) => {
       if (err) throw err;
       res.json({ token });
     });
@@ -58,7 +60,7 @@ exports.login = async (req, res) => {
       },
     };
 
-    jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+    jwt.sign(payload, jwtSecret, { expiresIn: '1h' }, (err, token) => {
       if (err) throw err;
       res.json({ token });
     });
@@ -70,7 +72,8 @@ exports.login = async (req, res) => {
 
 exports.getUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const userId = req.user?.id || req.user?.user?.id;
+    const user = await User.findById(userId).select('-password');
     res.json(user);
   } catch (error) {
     console.error(error);

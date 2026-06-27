@@ -133,19 +133,28 @@ async function loadDashboard() {
         });
         const user = await userResponse.json();
 
-        const purchasesResponse = await fetch(`${API_BASE}/payments/purchases`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        });
-        const purchases = await purchasesResponse.json();
-        // WHERE I CHANGE 
+        let purchases = [];
+        try {
+            const purchasesResponse = await fetch(`${API_BASE}/payments/purchases`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+            });
+            if (purchasesResponse.ok) {
+                purchases = await purchasesResponse.json();
+            } else {
+                console.warn('Purchases could not be loaded, continuing without them.');
+            }
+        } catch (purchaseError) {
+            console.warn('Purchases request failed:', purchaseError);
+        }
 
-        if (userResponse.ok && purchasesResponse.ok) {
-    displayDashboard(user, purchases);
-} else {
-    alert('Failed to load dashboard');
+        if (userResponse.ok) {
+            displayDashboard(user, purchases);
+        } else {
+            alert('Failed to load dashboard');
         }
     } catch (error) {
         console.error('Load dashboard error:', error);
+        alert('Failed to load dashboard');
     }
 }
 
