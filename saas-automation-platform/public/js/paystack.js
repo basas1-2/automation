@@ -12,7 +12,7 @@ function initiatePayment() {
 
     const handler = PaystackPop.setup({
         key: 'pk_live_0cd1f755e46db8a1a2354ea8dd68a76b9aa3987d', // Replace with your public key
-        email: 'user@example.com', // Should get from user data
+        email: 'user.email', // Should get from user data
         amount: amount,
         currency: 'NGN',
         callback: function(response) {
@@ -29,7 +29,7 @@ function initiatePayment() {
 
 async function verifyPayment(reference, services) {
     try {
-        const response = await fetch('http://localhost:5000/api/payments/verify', {
+        const response = await fetch('const response = await fetch('/api/payments/verify', {', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
