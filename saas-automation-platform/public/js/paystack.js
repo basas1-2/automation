@@ -13,25 +13,8 @@ function initiatePayment() {
         'website-chatbot': 15000,
         instagram: 12000,
         tiktok: 13000
-    }; // in kobo
+    };
 
-    const amount = services.reduce((total, service) => total + (prices[service] || 0), 0);
-
-    const handler = PaystackPop.setup({
-        key: 'pk_live_0cd1f755e46db8a1a2354ea8dd68a76b9aa3987d',
-        email: 'user.email', // Replace with the logged-in user's email later
-        amount: amount,
-        currency: 'NGN',
-        callback: function(response) {
-            verifyPayment(response.reference, services);
-        },
-        onClose: function() {
-            window.location.href = 'failure.html';
-        }
-    });
-
-    handler.openIframe();
-}
     const amount = services.reduce((total, service) => total + (prices[service] || 0), 0);
 
     const handler = PaystackPop.setup({
@@ -61,8 +44,6 @@ async function verifyPayment(reference, services) {
             body: JSON.stringify({ reference, services }),
         });
 
-        const data = await response.json();
-
         if (response.ok) {
             localStorage.removeItem('selectedServices');
             window.location.href = 'success.html';
@@ -70,7 +51,7 @@ async function verifyPayment(reference, services) {
             window.location.href = 'failure.html';
         }
     } catch (error) {
-        console.error('Verification error:', error);
+        console.error(error);
         window.location.href = 'failure.html';
     }
 }
