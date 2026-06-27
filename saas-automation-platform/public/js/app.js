@@ -135,12 +135,18 @@ async function loadDashboard() {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         });
         const purchases = await purchasesResponse.json();
+        // WHERE I CHANGE 
 
-        if (userResponse.ok && purchasesResponse.ok) {
-            displayDashboard(user, purchases);
-        } else {
-            alert('Failed to load dashboard');
-        }
+        console.log(userResponse.status);
+console.log(purchasesResponse.status);
+
+if (userResponse.ok && purchasesResponse.ok) {
+    displayDashboard(user, purchases);
+} else {
+    console.log(await userResponse.text());
+    console.log(await purchasesResponse.text());
+    alert('Failed to load dashboard');
+}
     } catch (error) {
         console.error('Load dashboard error:', error);
     }
