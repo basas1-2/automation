@@ -61,6 +61,7 @@ async function handleLogin(e) {
         const data = await response.json();
         if (response.ok) {
             localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify({ email }));
             window.location.href = 'dashboard.html';
         } else {
             alert(data.message || 'Login failed');
@@ -86,6 +87,7 @@ async function handleRegister(e) {
         const data = await response.json();
         if (response.ok) {
             localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify({ email }));
             window.location.href = 'dashboard.html';
         } else {
             alert(data.message || 'Registration failed');
