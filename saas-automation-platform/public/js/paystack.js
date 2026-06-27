@@ -1,4 +1,17 @@
+alert("paystack.js loaded");
 
+document.addEventListener('DOMContentLoaded', () => {
+    alert("DOM loaded");
+
+    const payBtn = document.getElementById('payBtn');
+    alert(payBtn ? "Button found" : "Button not found");
+
+    if (payBtn) {
+        payBtn.addEventListener('click', () => {
+            alert("Event listener works");
+        });
+    }
+});
 document.addEventListener('DOMContentLoaded', () => {
     const payBtn = document.getElementById('payBtn');
     if (payBtn) {
